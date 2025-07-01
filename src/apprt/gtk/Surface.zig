@@ -1886,6 +1886,18 @@ pub fn keyEvent(
         break :consumed gtk_key.translateMods(@bitCast(masked));
     };
 
+    // If we're not in a dead key state, we want to translate our text
+    // to some input.Key.
+    const key = if (!self.im_composing) key: {
+        // First, try to convert the keyval directly to a key. This allows the
+        // use of key remapping and identification of keypad numerics (as
+        // opposed to their ASCII counterparts)
+        if (gtk_key.keyFromKeyval(keyval)) |key| {
+            break :key key;
+        }
+        break :key physical_key;
+    } else .unidentified;
+
     // log.debug("key pressed key={} keyval={x} physical_key={} composing={} text_len={} mods={}", .{
     //     key,
     //     keyval,
@@ -1915,7 +1927,7 @@ pub fn keyEvent(
     // Invoke the core Ghostty logic to handle this input.
     const effect = self.core_surface.keyCallback(.{
         .action = action,
-        .key = physical_key,
+        .key = key,
         .mods = mods,
         .consumed_mods = consumed_mods,
         .composing = self.im_composing,
