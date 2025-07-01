@@ -874,6 +874,13 @@ pub const Surface = extern struct {
             if (entry.native == keycode) break :keycode entry.key;
         } else .unidentified;
 
+        const key = if (!priv.im_composing) key: {
+            if (gtk_key.keyFromKeyval(keyval)) |key|
+                break :key key
+            else
+                break :key physical_key;
+        } else .unidentified;
+
         // Get our modifier for the event
         const mods: input.Mods = gtk_key.eventMods(
             event,
@@ -923,7 +930,7 @@ pub const Surface = extern struct {
         const surface = priv.core_surface orelse return false;
         const effect = surface.keyCallback(.{
             .action = action,
-            .key = physical_key,
+            .key = key,
             .mods = mods,
             .consumed_mods = consumed_mods,
             .composing = priv.im_composing,
